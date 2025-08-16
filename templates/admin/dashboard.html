@@ -1,0 +1,196 @@
+<!-- templates/admin/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin - ImmoFacile{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-shield-check text-warning me-2"></i>Dashboard Administrateur</h1>
+    <div class="badge bg-success fs-6 px-3 py-2">
+        <i class="bi bi-person-check me-1"></i>{{ current_user.username }}
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-5">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-house-fill display-4 mb-2"></i>
+                <h3 class="fw-bold">{{ listings|length }}</h3>
+                <p class="mb-0">Annonces totales</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="bi bi-people-fill display-4 mb-2"></i>
+                <h3 class="fw-bold">{{ users|length }}</h3>
+                <p class="mb-0">Utilisateurs inscrits</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation par onglets -->
+<ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="listings-tab" data-bs-toggle="tab" 
+                data-bs-target="#listings-pane" type="button" role="tab">
+            <i class="bi bi-house me-1"></i>Annonces ({{ listings|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="users-tab" data-bs-toggle="tab" 
+                data-bs-target="#users-pane" type="button" role="tab">
+            <i class="bi bi-people me-1"></i>Utilisateurs ({{ users|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="adminTabsContent">
+    <!-- Onglet Annonces -->
+    <div class="tab-pane fade show active" id="listings-pane" role="tabpanel">
+        {% if listings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Type</th>
+                            <th>Prix</th>
+                            <th>Auteur</th>
+                            <th>Date</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for listing in listings %}
+                            <tr>
+                                <td class="text-muted">#{{ listing.id }}</td>
+                                <td>
+                                    <a href="{{ url_for('listings.listing_detail', id=listing.id) }}" 
+                                       class="text-decoration-none fw-bold">
+                                        {{ listing.title[:30] }}{% if listing.title|length > 30 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ listing.property_type|title }}</span>
+                                </td>
+                                <td class="fw-bold text-success">{{ "{:,}".format(listing.price) }} FCFA</td>
+                                <td>
+                                    <i class="bi bi-person me-1"></i>{{ listing.author.username }}
+                                </td>
+                                <td class="text-muted small">
+                                    {{ listing.created_at.strftime('%d/%m/%Y') }}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('listings.listing_detail', id=listing.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('admin.delete_listing', id=listing.id) }}" 
+                                              style="display: inline;" 
+                                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?')">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-house-slash display-4 text-muted"></i>
+                <h4 class="text-muted">Aucune annonce</h4>
+                <p>Aucune annonce n'a encore été publiée.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Onglet Utilisateurs -->
+    <div class="tab-pane fade" id="users-pane" role="tabpanel">
+        {% if users %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom d'utilisateur</th>
+                            <th>Téléphone</th>
+                            <th>Statut</th>
+                            <th>Annonces</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr {% if user == current_user %}class="table-warning"{% endif %}>
+                                <td class="text-muted">#{{ user.id }}</td>
+                                <td>
+                                    <strong>{{ user.username }}</strong>
+                                    {% if user.is_admin %}
+                                        <span class="badge bg-warning text-dark ms-1">Admin</span>
+                                    {% endif %}
+                                </td>
+                                <td><i class="bi bi-telephone me-1"></i>{{ user.phone }}</td>
+                                <td>
+                                    {% if user.is_admin %}
+                                        <span class="badge bg-danger">Administrateur</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Utilisateur</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">{{ user.listings|length }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        {% if user.is_admin %}
+                                            <button class="btn btn-sm btn-secondary disabled">
+                                                <i class="bi bi-shield-lock"></i>
+                                            </button>
+                                        {% elif user.id == current_user.id %}
+                                            <button class="btn btn-sm btn-warning disabled">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                            </button>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('admin.delete_user', id=user.id) }}"
+                                                  style="display: inline;"
+                                                  onsubmit="return confirm('Supprimer cet utilisateur et toutes ses annonces ?')">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people-fill display-4 text-muted"></i>
+                <h4 class="text-muted">Aucun utilisateur</h4>
+                <p>Aucun utilisateur n'est encore inscrit.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bouton retour -->
+<div class="text-center mt-4">
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Retour à l'accueil
+    </a>
+</div>
+{% endblock %}

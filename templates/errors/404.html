@@ -1,0 +1,48 @@
+<!-- templates/errors/404.html -->
+{% extends "base.html" %}
+
+{% block title %}Page introuvable - ImmoFacile{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+    <h1 class="display-4 fw-bold text-dark">404</h1>
+    <h2 class="mb-3">Page introuvable</h2>
+    <p class="lead text-muted mb-4">
+        Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
+    </p>
+    <div class="d-grid gap-2 d-md-block">
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-house-fill me-2"></i>Retour à l'accueil
+        </a>
+        <button onclick="history.back()" class="btn btn-outline-secondary btn-lg">
+            <i class="bi bi-arrow-left me-2"></i>Page précédente
+        </button>
+    </div>
+    
+    <!-- Suggestions utiles -->
+    <div class="mt-5">
+        <h5 class="text-muted mb-3">Que souhaitez-vous faire ?</h5>
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search me-1"></i>Voir les annonces
+                </a>
+            </div>
+            {% if current_user.is_authenticated %}
+                <div class="col-auto">
+                    <a href="{{ url_for('listings.add_listing') }}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-1"></i>Publier une annonce
+                    </a>
+                </div>
+            {% else %}
+                <div class="col-auto">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-success">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

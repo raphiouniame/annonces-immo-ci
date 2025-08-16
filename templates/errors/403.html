@@ -1,0 +1,25 @@
+<!-- templates/errors/403.html -->
+{% extends "base.html" %}
+
+{% block title %}Accès refusé - ImmoFacile{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <i class="bi bi-shield-x display-1 text-warning"></i>
+    <h1 class="display-4 fw-bold text-dark">403</h1>
+    <h2 class="mb-3">Accès refusé</h2>
+    <p class="lead text-muted mb-4">
+        Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+    </p>
+    <div class="d-grid gap-2 d-md-block">
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-house-fill me-2"></i>Retour à l'accueil
+        </a>
+        {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+# .gitignore
+# Fichiers à ignorer dans le dépôt Git
+
+# Variables d'environnement
+.env
+.env.local
+
+# Fichiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.so
+.DS_Store
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Base de données locale (si tu utilises SQLite en dev)
+app.db
+*.sqlite3
+
+# Fichiers générés par Flask-Migrate (optionnel : tu peux les versionner)
+# migrations/versions/*.py
+# migrations/alembic.ini
+
+# Éditeurs
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Système
+Thumbs.db
+desktop.ini
