@@ -9,6 +9,7 @@ import sys
 from app import create_app
 from models import db, User
 from werkzeug.security import generate_password_hash
+from sqlalchemy import inspect
 
 
 def create_admin():
@@ -17,13 +18,18 @@ def create_admin():
 
     with app.app_context():
         try:
+            # Vérifier que la table 'user' existe
+            inspector = inspect(db.engine)
+            if not inspector.has_table('user'):
+                print("❌ ERREUR : La table 'user' n'existe pas. Appliquez les migrations (alembic upgrade head).")
+                sys.exit(1)
+
             # Récupérer et nettoyer les variables d'environnement
             ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin').strip()
             ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '+221123456789').strip()
             ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123').strip()
 
             # === Vérifications de sécurité ===
-
             if not ADMIN_USERNAME:
                 print("❌ ERREUR: ADMIN_USERNAME ne peut pas être vide.")
                 sys.exit(1)
@@ -61,12 +67,9 @@ def create_admin():
                 db.session.commit()
                 print(f"✅ Administrateur '{ADMIN_USERNAME}' créé avec succès !")
 
-            # Informations de connexion
+            # Informations de connexion (sans mot de passe)
             print(f"🔑 Nom d'utilisateur: {ADMIN_USERNAME}")
-            if os.environ.get('FLASK_ENV') == 'production':
-                print("🔑 Mot de passe: (défini via ADMIN_PASSWORD - non affiché pour des raisons de sécurité)")
-            else:
-                print("🔑 Mot de passe: (défini via ADMIN_PASSWORD - non affiché par défaut pour éviter les fuites)")
+            print("🔑 Mot de passe: (défini via ADMIN_PASSWORD - non affiché pour des raisons de sécurité)")
 
         except Exception as e:
             print(f"❌ Erreur lors de la création ou de la promotion de l'admin : {e}")
