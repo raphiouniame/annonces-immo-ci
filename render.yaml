@@ -1,4 +1,8 @@
 # render.yaml
+# Configuration de déploiement pour l'application annonces-immo-ci
+# Utilise Supabase comme base de données PostgreSQL
+# Et Cloudinary pour les médias (images et vidéos)
+
 services:
   - type: web
     name: annonces-immo-ci
@@ -8,27 +12,27 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       alembic upgrade head
-      python create_admin_auto.py
+      python ./create_admin_auto.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1
+    healthCheckPath: /
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: FLASK_APP
+        value: app.py
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false  # ⚠️ À remplir avec ton URL Supabase
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         value: dbn8ees4r
       - key: CLOUDINARY_API_KEY
         value: "118479922956157"
       - key: CLOUDINARY_API_SECRET
-        sync: false  # 🔐 Saisir manuellement dans Render
+        sync: false
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PHONE
         value: "+2250506531522"
       - key: ADMIN_PASSWORD
-        sync: false  # 🔐 Saisir manuellement dans Render
-      - key: FLASK_APP
-        value: app.py
-    healthCheckPath: /
+        sync: false
