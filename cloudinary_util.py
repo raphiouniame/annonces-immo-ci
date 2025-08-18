@@ -1,6 +1,7 @@
 """
 Utilitaires pour l'intégration de Cloudinary.
 Permet d'uploader, supprimer et gérer des fichiers (images, vidéos) dans le cloud.
+Utilise les upload presets : immo_upload (images) et immo_upload_video (vidéos).
 """
 
 import cloudinary
@@ -10,6 +11,14 @@ import logging
 
 # Configuration du logger
 logger = logging.getLogger(__name__)
+
+# Noms des upload presets
+PRESET_IMAGE = "immo_upload"
+PRESET_VIDEO = "immo_upload_video"
+
+# Dossiers Cloudinary
+FOLDER_IMAGE = "annonces/images"
+FOLDER_VIDEO = "annonces/videos"
 
 
 def init_cloudinary():
@@ -47,7 +56,7 @@ def init_cloudinary():
 
 def upload_file(file, resource_type='image'):
     """
-    Téléverse un fichier vers Cloudinary.
+    Téléverse un fichier vers Cloudinary en utilisant le bon upload preset.
 
     :param file: Fichier (FileStorage, bytes, tempfile, etc.)
     :param resource_type: 'image', 'video', 'raw'
@@ -57,14 +66,25 @@ def upload_file(file, resource_type='image'):
         logger.warning(f"Type de ressource invalide : {resource_type}")
         return None
 
+    # Déterminer le preset et le dossier
+    if resource_type == 'image':
+        preset = PRESET_IMAGE
+        folder = FOLDER_IMAGE
+    elif resource_type == 'video':
+        preset = PRESET_VIDEO
+        folder = FOLDER_VIDEO
+    else:
+        preset = None
+        folder = None
+
     upload_options = {
         'resource_type': resource_type,
-        'quality': 'auto' if resource_type == 'image' else '720p',
-        'format': 'jpg' if resource_type == 'image' else None,
+        'preset': preset,           # Utilise le preset Cloudinary
+        'folder': folder,           # Organise dans un dossier
+        'use_filename': True,       # Garde le nom original
+        'unique_filename': True,    # Génère un ID unique si conflit
+        'overwrite': False,         # Ne remplace pas les fichiers
         'timeout': 10,
-        'use_filename': True,
-        'unique_filename': True,
-        'overwrite': False
     }
 
     try:

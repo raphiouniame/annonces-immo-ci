@@ -1,85 +1,73 @@
-"""
-Gestion des annonces immobilières : ajout et consultation.
-"""
-
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+# routes/listings.py
+from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
+from models import db, PropertyListing, Media
 from forms import ListingForm
-from models import PropertyListing, Media, db
-import logging
+from cloudinary_util import upload_file, detect_resource_type
 
-# Création du blueprint
-listings = Blueprint('listings', __name__)
-
+listings = Blueprint('listings', __name__, url_prefix='/listing')
 
 @listings.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_listing():
-    """
-    Permet à un utilisateur connecté de publier une nouvelle annonce.
-    Les médias sont uploadés via Cloudinary (widget), on reçoit les URLs.
-    """
     form = ListingForm()
     if form.validate_on_submit():
-        try:
-            # Récupérer les URLs et public_id (si fournis par le widget)
-            image_url = form.image_url.data.strip()
-            image_public_id = request.form.get('image_public_id', '').strip() or 'unknown'
-            video_url = form.video_url.data.strip()
-            video_public_id = request.form.get('video_public_id', '').strip() or None
+        # Créer l'annonce
+        listing = PropertyListing(
+            title=form.title.data,
+            description=form.description.data,
+            price=form.price.data,
+            property_type=form.property_type.data,
+            user_id=current_user.id
+        )
+        db.session.add(listing)
+        db.session.flush()  # Pour obtenir l'id avant commit
 
-            if not image_url:
-                flash("❌ Une image est requise pour publier une annonce.", "error")
-                return render_template('listings/add_listing.html', form=form)
+        # Gestion de l'image
+        image = request.files.get('image')
+        if image and image.filename != '':
+            # Détecte automatiquement que c'est une image
+            result = upload_file(image, resource_type='image')
+            if result:
+                media_img = Media(
+                    public_id=result['public_id'],
+                    url=result['url'],
+                    file_type='image',
+                    listing_id=listing.id
+                )
+                db.session.add(media_img)
+            else:
+                flash("Échec de l'upload de l'image.", "error")
 
-            # Créer l'annonce
-            listing = PropertyListing(
-                title=form.title.data,
-                description=form.description.data,
-                price=form.price.data,
-                property_type=form.property_type.data,
-                user_id=current_user.id
-            )
-            db.session.add(listing)
-            db.session.flush()  # Pour obtenir l'ID
-
-            # Ajouter l'image
-            media_image = Media(
-                public_id=image_public_id,
-                url=image_url,
-                file_type='image',
-                listing_id=listing.id
-            )
-            db.session.add(media_image)
-
-            # Ajouter la vidéo si présente
-            if video_url:
-                media_video = Media(
-                    public_id=video_public_id or 'unknown_video',
-                    url=video_url,
+        # Gestion de la vidéo
+        video = request.files.get('video')
+        if video and video.filename != '':
+            # Détecte automatiquement que c'est une vidéo
+            result = upload_file(video, resource_type='video')
+            if result:
+                media_vid = Media(
+                    public_id=result['public_id'],
+                    url=result['url'],
                     file_type='video',
                     listing_id=listing.id
                 )
-                db.session.add(media_video)
+                db.session.add(media_vid)
+            else:
+                flash("Échec de l'upload de la vidéo.", "error")
 
-            # Enregistrer tout
+        # Sauvegarde finale
+        try:
             db.session.commit()
-            flash("✅ Annonce publiée avec succès !", "success")
-            logging.info(f"[Listings] {current_user.username} a publié l'annonce ID={listing.id} : {listing.title}")
-            return redirect(url_for('main.index'))
-
+            flash('✅ Annonce publiée avec succès !', 'success')
+            return redirect(url_for('listings.listing_detail', id=listing.id))
         except Exception as e:
             db.session.rollback()
-            flash("❌ Une erreur est survenue lors de la publication de l'annonce. Veuillez réessayer.", "error")
-            logging.error(f"[Listings] Échec de publication par {current_user.username} : {e}")
+            flash('❌ Erreur lors de la sauvegarde de l\'annonce.', 'error')
+            print(f"[DB Error] {e}")
 
     return render_template('listings/add_listing.html', form=form)
 
-
-@listings.route('/listing/<int:id>')
+@listings.route('/<int:id>')
 def listing_detail(id):
-    """
-    Affiche le détail d'une annonce spécifique.
-    """
     listing = PropertyListing.query.get_or_404(id)
     return render_template('listings/listing_detail.html', listing=listing)

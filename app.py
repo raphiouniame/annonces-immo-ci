@@ -11,7 +11,7 @@ from flask_login import LoginManager
 from config import config  # On importe le mapping des configs
 from dotenv import load_dotenv
 load_dotenv()  # Charge les variables du .env
-from routes import *
+
 
 
 # Initialisation des extensions
