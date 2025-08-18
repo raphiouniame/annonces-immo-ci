@@ -11,9 +11,8 @@ services:
     region: frankfurt
     buildCommand: |
       pip install -r requirements.txt
-      alembic upgrade head
-      python ./create_admin_auto.py
-    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1
+      python ./init_db.py
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1 --max-requests 1000 --preload
     healthCheckPath: /
     envVars:
       - key: FLASK_ENV
@@ -23,7 +22,9 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        # Format Supabase : postgresql://postgres.xxxxx:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
+        # REMPLACEZ par votre vraie URL de connexion Supabase
+        value: postgresql://postgres.xxxxx:YOUR_DB_PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
       - key: CLOUDINARY_CLOUD_NAME
         value: dbn8ees4r
       - key: CLOUDINARY_API_KEY
