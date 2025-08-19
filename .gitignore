@@ -45,3 +45,12 @@ app.db
 # Système
 Thumbs.db
 desktop.ini
+# Dossier de migrations Flask-Migrate
+migrations/
+
+# Autres éléments...
+venv/
+.env
+__pycache__/
+*.pyc
+app.db
