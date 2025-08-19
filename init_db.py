@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
 Script d'initialisation de la base de données pour le déploiement
-Combine les migrations et la création de l'admin
 """
 
 import os
 import sys
 import logging
-from flask import Flask
-from flask_migrate import upgrade, init as migrate_init
 from app import create_app
 from models import db, User
 from werkzeug.security import generate_password_hash
+from sqlalchemy import text
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -25,20 +23,14 @@ def init_database():
         try:
             # Vérifier la connexion à la base de données
             logger.info("🔍 Vérification de la connexion à la base de données...")
-            db.engine.execute("SELECT 1")
+            with db.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
             logger.info("✅ Connexion à la base de données OK")
             
-            # Appliquer les migrations
-            logger.info("🔄 Application des migrations...")
-            try:
-                upgrade()
-                logger.info("✅ Migrations appliquées avec succès")
-            except Exception as e:
-                logger.warning(f"⚠️  Erreur lors des migrations (peut être normal) : {e}")
-                # En cas d'échec, créer les tables directement
-                logger.info("🔄 Création directe des tables...")
-                db.create_all()
-                logger.info("✅ Tables créées directement")
+            # Créer toutes les tables directement (plus simple que les migrations en première fois)
+            logger.info("🔄 Création des tables...")
+            db.create_all()
+            logger.info("✅ Tables créées avec succès")
             
             # Créer l'admin
             logger.info("👤 Création de l'utilisateur administrateur...")
@@ -48,6 +40,8 @@ def init_database():
             
         except Exception as e:
             logger.error(f"❌ Erreur critique lors de l'initialisation : {e}")
+            import traceback
+            traceback.print_exc()
             sys.exit(1)
 
 def create_admin_user():

@@ -1,66 +1,48 @@
 # config.py
-# Configuration centralisée pour l'application Flask
-
 import os
 from datetime import timedelta
 
+
 class Config:
-    """
-    Configuration de base partagée par tous les environnements.
-    """
-    # Clé secrète (obligatoire pour les sessions, CSRF, etc.)
+    """Configuration de base partagée par tous les environnements."""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-
-    # Base de données
-    SQLALCHEMY_TRACK_MODIFICATIONS = False  # Désactivé pour éviter les warnings
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,  # Vérifie la connexion avant chaque requête
-        'pool_recycle': 300,    # Recycle les connexions toutes les 5 min
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
     }
-
-    # Durée de la session
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
-
-    # Activation du mode debug (à désactiver en production)
     DEBUG = False
 
 
 class DevelopmentConfig(Config):
-    """
-    Configuration pour l'environnement de développement.
-    Utilise une base SQLite locale.
-    """
+    """Configuration pour l'environnement de développement."""
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
 
 
 class ProductionConfig(Config):
-    """
-    Configuration pour l'environnement de production (Render).
-    Utilise PostgreSQL via DATABASE_URL.
-    """
+    """Configuration pour l'environnement de production."""
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
-    # En production, la DATABASE_URL commence souvent par 'postgres://' mais SQLAlchemy 1.4+ attend 'postgresql://'
+    # Correction pour PostgreSQL
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
 
-    # Sécurité supplémentaire en production
-    SESSION_COOKIE_SECURE = True      # HTTPS uniquement
-    REMEMBER_COOKIE_SECURE = True     # Pour 'Se souvenir de moi'
-    SESSION_COOKIE_HTTPONLY = True    # Protège contre XSS
-    SESSION_COOKIE_SAMESITE = 'Lax'   # Protection CSRF
+    # Sécurité en production
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
 
 
 class TestingConfig(Config):
-    """
-    Configuration pour les tests.
-    """
+    """Configuration pour les tests."""
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///test.db'
-    WTF_CSRF_ENABLED = False  # Désactivé pour faciliter les tests
+    WTF_CSRF_ENABLED = False
 
 
 # Mapping des configurations

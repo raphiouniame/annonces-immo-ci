@@ -10,9 +10,10 @@ from flask import Flask, render_template
 from flask_login import LoginManager
 from config import config  # On importe le mapping des configs
 from dotenv import load_dotenv
-load_dotenv()  # Charge les variables du .env
 
-
+# Charger les variables d'environnement seulement en développement
+if os.environ.get('FLASK_ENV') != 'production':
+    load_dotenv()  # Charge les variables du .env
 
 # Initialisation des extensions
 login_manager = LoginManager()
@@ -34,9 +35,13 @@ def create_app():
         app.logger.setLevel(logging.INFO)
 
     # === Initialisation des extensions ===
-    from models import db, migrate  # migrate doit être ici pour éviter les imports circulaires
+    from models import db
     db.init_app(app)
-    migrate.init_app(app, db)
+    
+    # Migrations seulement en développement
+    if config_name == 'development':
+        from models import migrate
+        migrate.init_app(app, db)
 
     login_manager.init_app(app)
 
@@ -67,7 +72,9 @@ def create_app():
         init_cloudinary()
     except Exception as e:
         app.logger.critical(f"[Cloudinary] Échec de l'initialisation : {e}")
-        raise RuntimeError("Impossible de configurer Cloudinary. Vérifiez vos variables d'environnement.") from e
+        # En production, Cloudinary doit être configuré
+        if config_name == 'production':
+            raise RuntimeError("Impossible de configurer Cloudinary. Vérifiez vos variables d'environnement.") from e
 
     # === Gestionnaires d'erreurs ===
     @app.errorhandler(404)
@@ -76,7 +83,9 @@ def create_app():
 
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
+        # Vérifier que db.session existe avant de faire rollback
+        if hasattr(db, 'session'):
+            db.session.rollback()
         app.logger.error(f'Erreur serveur: {error}')
         return render_template('errors/500.html'), 500
 
@@ -84,11 +93,12 @@ def create_app():
     def forbidden_error(error):
         return render_template('errors/403.html'), 403
 
-    # === Création des tables (UNIQUEMENT en développement) ===
+    # === Création des tables uniquement en développement ===
+    # En production, les tables sont créées par init_db.py
     with app.app_context():
         if app.config['DEBUG'] and config_name == 'development':
             db.create_all()
-            app.logger.info("Tables créées (mode développement). Utilise Flask-Migrate en production.")
+            app.logger.info("Tables créées (mode développement). Utilise init_db.py en production.")
 
     return app
 

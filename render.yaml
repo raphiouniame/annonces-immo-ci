@@ -1,8 +1,4 @@
 # render.yaml
-# Configuration de déploiement pour l'application annonces-immo-ci
-# Utilise Supabase comme base de données PostgreSQL
-# Et Cloudinary pour les médias (images et vidéos)
-
 services:
   - type: web
     name: annonces-immo-ci
@@ -11,7 +7,9 @@ services:
     region: frankfurt
     buildCommand: |
       pip install -r requirements.txt
-      python ./init_db.py
+      export FLASK_APP=app.py
+      export FLASK_ENV=production
+      python init_db.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1 --max-requests 1000 --preload
     healthCheckPath: /
     envVars:
@@ -22,9 +20,8 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        # Format Supabase : postgresql://postgres.xxxxx:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
-        # REMPLACEZ par votre vraie URL de connexion Supabase
-        value: postgresql://postgres.xxxxx:YOUR_DB_PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+        # REMPLACEZ par votre vraie URL Supabase PostgreSQL
+        value: postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
       - key: CLOUDINARY_CLOUD_NAME
         value: dbn8ees4r
       - key: CLOUDINARY_API_KEY
