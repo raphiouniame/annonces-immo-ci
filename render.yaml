@@ -7,10 +7,8 @@ services:
     region: frankfurt
     buildCommand: |
       pip install -r requirements.txt
-      export FLASK_APP=app.py
-      export FLASK_ENV=production
       python init_db.py
-    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1 --max-requests 1000 --preload
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app --timeout 120 --workers 1 --max-requests 1000
     healthCheckPath: /
     envVars:
       - key: FLASK_ENV
@@ -18,10 +16,10 @@ services:
       - key: FLASK_APP
         value: app.py
       - key: SECRET_KEY
-        generateValue: true
+        generateValue: false
+        value: ec63b5026a38015db26e8befe33842c0f9c241014000b1c7d0604919238e111b
       - key: DATABASE_URL
-        # REMPLACEZ par votre vraie URL Supabase PostgreSQL
-        value: postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         value: dbn8ees4r
       - key: CLOUDINARY_API_KEY
