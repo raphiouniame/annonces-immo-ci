@@ -10,6 +10,7 @@ from flask import Flask, render_template
 from flask_login import LoginManager
 from config import config  # On importe le mapping des configs
 from dotenv import load_dotenv
+import cloudinary
 
 # Charger les variables d'environnement seulement en développement
 if os.environ.get('FLASK_ENV') != 'production':
@@ -55,6 +56,20 @@ def create_app():
             app.logger.error(f"[User Loader] Échec du chargement de l'utilisateur {user_id}: {e}")
             return None
 
+    # === Configuration de Cloudinary ===
+    try:
+        cloudinary_url = os.environ.get("CLOUDINARY_URL")
+        if cloudinary_url:
+            cloudinary.config(url=cloudinary_url)
+            app.logger.info("✅ Cloudinary configuré avec succès via CLOUDINARY_URL.")
+        else:
+            app.logger.warning("⚠️  Cloudinary non configuré : CLOUDINARY_URL manquante.")
+    except Exception as e:
+        app.logger.critical(f"[Cloudinary] Échec de l'initialisation : {e}")
+        # En production, Cloudinary doit être configuré
+        if config_name == 'production':
+            raise RuntimeError("Impossible de configurer Cloudinary. Vérifiez vos variables d'environnement.") from e
+
     # === Enregistrement des Blueprints ===
     from routes.main import main
     from routes.auth import auth
@@ -65,16 +80,6 @@ def create_app():
     app.register_blueprint(auth)           # /auth/*
     app.register_blueprint(listings)       # /listing/*
     app.register_blueprint(admin)          # /admin/*
-
-    # === Initialisation de Cloudinary ===
-    try:
-        from cloudinary_util import init_cloudinary
-        init_cloudinary()
-    except Exception as e:
-        app.logger.critical(f"[Cloudinary] Échec de l'initialisation : {e}")
-        # En production, Cloudinary doit être configuré
-        if config_name == 'production':
-            raise RuntimeError("Impossible de configurer Cloudinary. Vérifiez vos variables d'environnement.") from e
 
     # === Gestionnaires d'erreurs ===
     @app.errorhandler(404)
