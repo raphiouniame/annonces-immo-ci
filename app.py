@@ -41,8 +41,11 @@ def create_app():
     
     # Migrations seulement en développement
     if config_name == 'development':
-        from models import migrate
-        migrate.init_app(app, db)
+        try:
+            from models import migrate
+            migrate.init_app(app, db)
+        except ImportError:
+            app.logger.warning("Flask-Migrate non disponible")
 
     login_manager.init_app(app)
 
@@ -58,12 +61,27 @@ def create_app():
 
     # === Configuration de Cloudinary ===
     try:
+        # Priorité à CLOUDINARY_URL si définie
         cloudinary_url = os.environ.get("CLOUDINARY_URL")
         if cloudinary_url:
             cloudinary.config(url=cloudinary_url)
             app.logger.info("✅ Cloudinary configuré avec succès via CLOUDINARY_URL.")
         else:
-            app.logger.warning("⚠️  Cloudinary non configuré : CLOUDINARY_URL manquante.")
+            # Sinon utiliser les variables individuelles
+            cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+            api_key = os.environ.get('CLOUDINARY_API_KEY')
+            api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+            
+            if all([cloud_name, api_key, api_secret]):
+                cloudinary.config(
+                    cloud_name=cloud_name,
+                    api_key=api_key,
+                    api_secret=api_secret,
+                    secure=True
+                )
+                app.logger.info("✅ Cloudinary configuré avec succès via variables individuelles.")
+            else:
+                app.logger.warning("⚠️ Cloudinary non configuré : variables manquantes.")
     except Exception as e:
         app.logger.critical(f"[Cloudinary] Échec de l'initialisation : {e}")
         # En production, Cloudinary doit être configuré
@@ -72,14 +90,38 @@ def create_app():
 
     # === Enregistrement des Blueprints ===
     from routes.main import main
-    from routes.auth import auth
     from routes.listings import listings
-    from routes.admin import admin
 
     app.register_blueprint(main)           # /
-    app.register_blueprint(auth)           # /auth/*
     app.register_blueprint(listings)       # /listing/*
-    app.register_blueprint(admin)          # /admin/*
+
+    # Enregistrer auth et admin seulement s'ils existent
+    try:
+        from routes.auth import auth
+        app.register_blueprint(auth)       # /auth/*
+        app.logger.info("Blueprint 'auth' enregistré")
+    except ImportError:
+        app.logger.warning("Blueprint 'auth' non trouvé - création d'une route temporaire")
+        
+        # Route temporaire pour éviter les erreurs
+        @app.route('/auth/login')
+        def temp_login():
+            return render_template_string("""
+            <h1>Authentification temporaire</h1>
+            <p>Le module d'authentification n'est pas encore disponible.</p>
+            <a href="/">Retour à l'accueil</a>
+            """)
+        
+        @app.route('/auth/logout')
+        def temp_logout():
+            return redirect(url_for('main.index'))
+
+    try:
+        from routes.admin import admin
+        app.register_blueprint(admin)      # /admin/*
+        app.logger.info("Blueprint 'admin' enregistré")
+    except ImportError:
+        app.logger.warning("Blueprint 'admin' non trouvé")
 
     # === Gestionnaires d'erreurs ===
     @app.errorhandler(404)
@@ -90,7 +132,10 @@ def create_app():
     def internal_error(error):
         # Vérifier que db.session existe avant de faire rollback
         if hasattr(db, 'session'):
-            db.session.rollback()
+            try:
+                db.session.rollback()
+            except:
+                pass
         app.logger.error(f'Erreur serveur: {error}')
         return render_template('errors/500.html'), 500
 
@@ -102,8 +147,11 @@ def create_app():
     # En production, les tables sont créées par init_db.py
     with app.app_context():
         if app.config['DEBUG'] and config_name == 'development':
-            db.create_all()
-            app.logger.info("Tables créées (mode développement). Utilise init_db.py en production.")
+            try:
+                db.create_all()
+                app.logger.info("Tables créées (mode développement)")
+            except Exception as e:
+                app.logger.error(f"Erreur création tables : {e}")
 
     return app
 

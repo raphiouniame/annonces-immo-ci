@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script d'initialisation de la base de données pour le déploiement
+Script d'initialisation de la base de données pour le déploiement avec Supabase
 """
 
 import os
@@ -21,16 +21,24 @@ def init_database():
     
     with app.app_context():
         try:
-            # Vérifier la connexion à la base de données
-            logger.info("🔍 Vérification de la connexion à la base de données...")
-            with db.engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            logger.info("✅ Connexion à la base de données OK")
+            # Vérifier la connexion à Supabase
+            logger.info("🔍 Vérification de la connexion à Supabase...")
             
-            # Créer toutes les tables directement (plus simple que les migrations en première fois)
+            # Test de connexion plus robuste
+            with db.engine.connect() as conn:
+                result = conn.execute(text("SELECT version()"))
+                version = result.fetchone()
+                logger.info(f"✅ Connexion Supabase OK - PostgreSQL {version[0] if version else 'version inconnue'}")
+            
+            # Créer toutes les tables
             logger.info("🔄 Création des tables...")
             db.create_all()
-            logger.info("✅ Tables créées avec succès")
+            logger.info("✅ Tables créées avec succès sur Supabase")
+            
+            # Vérifier que les tables existent
+            inspector = db.inspect(db.engine)
+            tables = inspector.get_table_names()
+            logger.info(f"📋 Tables créées : {', '.join(tables)}")
             
             # Créer l'admin
             logger.info("👤 Création de l'utilisateur administrateur...")
@@ -42,6 +50,14 @@ def init_database():
             logger.error(f"❌ Erreur critique lors de l'initialisation : {e}")
             import traceback
             traceback.print_exc()
+            
+            # Informations de debug supplémentaires
+            database_url = os.environ.get('DATABASE_URL', 'Non définie')
+            if database_url != 'Non définie':
+                # Masquer les credentials dans les logs
+                safe_url = database_url.split('@')[-1] if '@' in database_url else 'URL malformée'
+                logger.info(f"📍 Base de données cible : {safe_url}")
+            
             sys.exit(1)
 
 def create_admin_user():
@@ -54,6 +70,11 @@ def create_admin_user():
         # Vérifications de sécurité
         if not ADMIN_USERNAME or not ADMIN_PASSWORD:
             raise ValueError("ADMIN_USERNAME et ADMIN_PASSWORD sont obligatoires")
+        
+        # Interdire les mots de passe faibles en production
+        weak_passwords = ['admin123', 'password', '123456', 'Admin2025!']
+        if ADMIN_PASSWORD in weak_passwords and os.environ.get('FLASK_ENV') == 'production':
+            raise ValueError(f"Mot de passe trop faible détecté en production: {ADMIN_PASSWORD}")
         
         # Vérifier si l'utilisateur existe
         existing = User.query.filter_by(username=ADMIN_USERNAME).first()
@@ -77,9 +98,39 @@ def create_admin_user():
             db.session.commit()
             logger.info(f"✅ Administrateur '{ADMIN_USERNAME}' créé avec succès")
             
+        # Vérifier que l'utilisateur a bien été créé/mis à jour
+        final_admin = User.query.filter_by(username=ADMIN_USERNAME).first()
+        if final_admin and final_admin.is_admin:
+            logger.info(f"🔐 Admin vérifié : {ADMIN_USERNAME} (ID: {final_admin.id})")
+        else:
+            raise Exception("Échec de la vérification de l'admin après création")
+            
     except Exception as e:
         logger.error(f"❌ Erreur lors de la création de l'admin : {e}")
         raise
 
+def test_supabase_connection():
+    """Test spécifique pour Supabase"""
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            logger.error("❌ DATABASE_URL non définie")
+            return False
+        
+        if not database_url.startswith('postgresql://'):
+            logger.error(f"❌ URL de base de données invalide (doit commencer par postgresql://)")
+            return False
+        
+        logger.info("✅ Configuration base de données valide")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur test connexion Supabase : {e}")
+        return False
+
 if __name__ == '__main__':
+    # Test préliminaire
+    if not test_supabase_connection():
+        sys.exit(1)
+    
     init_database()
