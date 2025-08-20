@@ -1,4 +1,4 @@
-# render.yaml - Configuration optimisée pour Flask + Supabase + Render
+# render.yaml - Configuration complète pour Flask + Supabase + Render
 services:
   - type: web
     name: annonces-immo-ci
@@ -6,12 +6,12 @@ services:
     env: python
     region: frankfurt
 
-    # Commande de build : uniquement l'installation des dépendances
+    # 🔧 Commande de build : installation des dépendances
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
 
-    # Commande de démarrage : ordre critique
+    # ▶️ Commande de démarrage : ordre critique
     startCommand: |
       flask db upgrade && python create_admin.py && gunicorn --bind 0.0.0.0:$PORT wsgi:app \
         --timeout 120 \
@@ -21,10 +21,10 @@ services:
         --access-logfile - \
         --error-logfile -
 
-    # Vérification de santé
+    # 🩺 Vérification de santé
     healthCheckPath: /
 
-    # Variables d'environnement
+    # 🔐 Variables d'environnement
     envVars:
       - key: FLASK_ENV
         value: production
@@ -32,14 +32,17 @@ services:
         value: app.py
       - key: SECRET_KEY
         generateValue: true
+
       - key: DATABASE_URL
-        value: postgresql://postgres:[MOT_DE_PASSE]@db.[PROJET_ID].supabase.co:5432/postgres
+        value: "postgresql://postgres:Yesboy1818959090@db.pafbtzfifplamjkgwrye.supabase.co:5432/postgres"
+
       - key: CLOUDINARY_CLOUD_NAME
-        value: votre_cloud_name
+        value: "dbn8ees4r"
       - key: CLOUDINARY_API_KEY
-        value: votre_api_key
+        value: "118479922956157"
       - key: CLOUDINARY_API_SECRET
-        value: votre_api_secret
+        value: "ei9ybFeXJx203d0bzKBR9wiULyw"
+
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PHONE
