@@ -5,16 +5,15 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-5">
-        <div class="card shadow-lg border-0">
-            <div class="card-header bg-primary text-white text-center py-4">
-                <h3 class="mb-0">
-                    <i class="bi bi-person-plus-fill me-2"></i>Créer un compte
-                </h3>
-                <p class="mb-0 opacity-75">Rejoignez ImmoFacile</p>
+        <div class="card shadow border-0">
+            <div class="card-header bg-success text-white text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-plus-fill me-2"></i>
+                    Inscription
+                </h4>
             </div>
-            
             <div class="card-body p-4">
-                <form method="POST">
+                <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
                     
                     <!-- Nom d'utilisateur -->
@@ -41,9 +40,6 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>Format: +221 77 123 45 67
-                        </div>
                     </div>
 
                     <!-- Mot de passe -->
@@ -57,13 +53,11 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-text">
-                            <i class="bi bi-shield-check me-1"></i>Minimum 6 caractères
-                        </div>
+                        <div class="form-text">Minimum 6 caractères</div>
                     </div>
 
-                    <!-- Confirmation mot de passe -->
-                    <div class="mb-4">
+                    <!-- Confirmation -->
+                    <div class="mb-3">
                         {{ form.confirm.label(class="form-label fw-bold") }}
                         {{ form.confirm(class="form-control" + (" is-invalid" if form.confirm.errors else "")) }}
                         {% if form.confirm.errors %}
@@ -75,18 +69,17 @@
                         {% endif %}
                     </div>
 
-                    <!-- Bouton d'inscription -->
+                    <!-- Bouton de soumission -->
                     <div class="d-grid">
-                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        {{ form.submit(class="btn btn-success btn-lg") }}
                     </div>
                 </form>
             </div>
-            
             <div class="card-footer text-center bg-light">
                 <p class="mb-0">
-                    Déjà inscrit ? 
-                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-bold">
-                        Se connecter
+                    Déjà un compte ? 
+                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
+                        Connectez-vous ici
                     </a>
                 </p>
             </div>

@@ -1,11 +1,27 @@
+# requirements.txt - Dépendances Python pour Render
+
+# Framework Flask
 Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
 WTForms==3.1.2
-Flask-Migrate==4.0.5
+Flask-Migrate==4.0.7
+
+# Serveur WSGI pour production
 gunicorn==21.2.0
+
+# Base de données PostgreSQL
 psycopg2-binary==2.9.9
+
+# Variables d'environnement (optionnel en production)
 python-dotenv==1.0.1
+
+# Upload de fichiers - Cloudinary
 cloudinary==1.40.0
+
+# Sécurité et utilitaires
 Werkzeug==3.0.3
+
+# Gestion des dates/heures
+python-dateutil==2.8.2

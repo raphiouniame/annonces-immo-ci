@@ -1,18 +1,9 @@
-# .gitignore
-# Fichiers à ignorer dans le dépôt Git
+# .gitignore - Configuration pour Flask + Render
 
 # Variables d'environnement
 .env
 .env.local
-
-# Fichiers Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyc
-*.so
-.DS_Store
+.env.production
 
 # Virtual Environment
 venv/
@@ -22,35 +13,31 @@ ENV/
 env.bak/
 venv.bak/
 
+# Fichiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.pyc
+
 # Logs
 *.log
 logs/
 *.log.*
 
-# Base de données locale (si tu utilises SQLite en dev)
+# Base de données locale (uniquement en dev, si utilisé)
 app.db
 *.sqlite3
 
-# Fichiers générés par Flask-Migrate (optionnel : tu peux les versionner)
-# migrations/versions/*.py
-# migrations/alembic.ini
-
-# Éditeurs
+# Éditeurs et OS
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
-
-# Système
 Thumbs.db
 desktop.ini
-# Dossier de migrations Flask-Migrate
-migrations/
 
-# Autres éléments...
-venv/
-.env
-__pycache__/
-*.pyc
-app.db
+# Fichiers temporaires
+.DS_Store

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script d'initialisation de la base de données pour le déploiement avec Supabase
+Script d'initialisation de la base de données pour Render/Supabase
 """
 
 import os
@@ -12,125 +12,156 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy import text
 
 # Configuration du logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-def init_database():
-    """Initialise la base de données et crée l'admin"""
-    app = create_app()
+
+def verify_environment():
+    """Vérifie que toutes les variables d'environnement nécessaires sont présentes"""
+    required_vars = [
+        'DATABASE_URL',
+        'SECRET_KEY',
+        'CLOUDINARY_CLOUD_NAME',
+        'CLOUDINARY_API_KEY',
+        'CLOUDINARY_API_SECRET'
+    ]
     
-    with app.app_context():
-        try:
-            # Vérifier la connexion à Supabase
-            logger.info("🔍 Vérification de la connexion à Supabase...")
-            
-            # Test de connexion plus robuste
+    missing_vars = []
+    for var in required_vars:
+        if not os.environ.get(var):
+            missing_vars.append(var)
+    
+    if missing_vars:
+        logger.error(f"Variables d'environnement manquantes: {', '.join(missing_vars)}")
+        return False
+    
+    # Vérification spécifique de l'URL de base de données
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url.startswith(('postgresql://', 'postgres://')):
+        logger.error("DATABASE_URL doit être une URL PostgreSQL valide")
+        return False
+    
+    logger.info("Toutes les variables d'environnement sont présentes")
+    return True
+
+
+def test_database_connection():
+    """Test la connexion à la base de données"""
+    try:
+        app = create_app()
+        with app.app_context():
+            # Test de connexion simple
             with db.engine.connect() as conn:
                 result = conn.execute(text("SELECT version()"))
                 version = result.fetchone()
-                logger.info(f"✅ Connexion Supabase OK - PostgreSQL {version[0] if version else 'version inconnue'}")
-            
-            # Créer toutes les tables
-            logger.info("🔄 Création des tables...")
-            db.create_all()
-            logger.info("✅ Tables créées avec succès sur Supabase")
-            
-            # Vérifier que les tables existent
-            inspector = db.inspect(db.engine)
-            tables = inspector.get_table_names()
-            logger.info(f"📋 Tables créées : {', '.join(tables)}")
-            
-            # Créer l'admin
-            logger.info("👤 Création de l'utilisateur administrateur...")
-            create_admin_user()
-            
-            logger.info("🎉 Initialisation de la base de données terminée avec succès !")
-            
-        except Exception as e:
-            logger.error(f"❌ Erreur critique lors de l'initialisation : {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # Informations de debug supplémentaires
-            database_url = os.environ.get('DATABASE_URL', 'Non définie')
-            if database_url != 'Non définie':
-                # Masquer les credentials dans les logs
-                safe_url = database_url.split('@')[-1] if '@' in database_url else 'URL malformée'
-                logger.info(f"📍 Base de données cible : {safe_url}")
-            
-            sys.exit(1)
-
-def create_admin_user():
-    """Crée ou met à jour l'utilisateur administrateur"""
-    try:
-        ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin').strip()
-        ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '+2250506531522').strip()
-        ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Admin2025!').strip()
-        
-        # Vérifications de sécurité
-        if not ADMIN_USERNAME or not ADMIN_PASSWORD:
-            raise ValueError("ADMIN_USERNAME et ADMIN_PASSWORD sont obligatoires")
-        
-        # Interdire les mots de passe faibles en production
-        weak_passwords = ['admin123', 'password', '123456', 'Admin2025!']
-        if ADMIN_PASSWORD in weak_passwords and os.environ.get('FLASK_ENV') == 'production':
-            raise ValueError(f"Mot de passe trop faible détecté en production: {ADMIN_PASSWORD}")
-        
-        # Vérifier si l'utilisateur existe
-        existing = User.query.filter_by(username=ADMIN_USERNAME).first()
-        
-        if existing:
-            if not existing.is_admin:
-                existing.is_admin = True
-                db.session.commit()
-                logger.info(f"✅ Utilisateur '{ADMIN_USERNAME}' promu en administrateur")
-            else:
-                logger.info(f"ℹ️  Administrateur '{ADMIN_USERNAME}' existe déjà")
-        else:
-            # Créer le nouvel admin
-            admin = User(
-                username=ADMIN_USERNAME,
-                phone=ADMIN_PHONE,
-                password=generate_password_hash(ADMIN_PASSWORD),
-                is_admin=True
-            )
-            db.session.add(admin)
-            db.session.commit()
-            logger.info(f"✅ Administrateur '{ADMIN_USERNAME}' créé avec succès")
-            
-        # Vérifier que l'utilisateur a bien été créé/mis à jour
-        final_admin = User.query.filter_by(username=ADMIN_USERNAME).first()
-        if final_admin and final_admin.is_admin:
-            logger.info(f"🔐 Admin vérifié : {ADMIN_USERNAME} (ID: {final_admin.id})")
-        else:
-            raise Exception("Échec de la vérification de l'admin après création")
-            
+                if version:
+                    logger.info(f"Connexion PostgreSQL OK - Version: {version[0][:50]}...")
+                    return True
+                else:
+                    logger.error("Impossible de récupérer la version PostgreSQL")
+                    return False
     except Exception as e:
-        logger.error(f"❌ Erreur lors de la création de l'admin : {e}")
-        raise
-
-def test_supabase_connection():
-    """Test spécifique pour Supabase"""
-    try:
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            logger.error("❌ DATABASE_URL non définie")
-            return False
-        
-        if not database_url.startswith('postgresql://'):
-            logger.error(f"❌ URL de base de données invalide (doit commencer par postgresql://)")
-            return False
-        
-        logger.info("✅ Configuration base de données valide")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur test connexion Supabase : {e}")
+        logger.error(f"Erreur de connexion à la base de données: {e}")
         return False
 
-if __name__ == '__main__':
-    # Test préliminaire
-    if not test_supabase_connection():
+
+def create_tables():
+    """Crée toutes les tables de la base de données"""
+    try:
+        app = create_app()
+        with app.app_context():
+            logger.info("Création des tables...")
+            db.create_all()
+            
+            # Vérification que les tables ont été créées
+            inspector = db.inspect(db.engine)
+            tables = inspector.get_table_names()
+            
+            expected_tables = ['user', 'property_listing', 'media']
+            for table in expected_tables:
+                if table not in tables:
+                    raise Exception(f"Table '{table}' non créée")
+            
+            logger.info(f"Tables créées avec succès: {', '.join(tables)}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Erreur lors de la création des tables: {e}")
+        return False
+
+
+def create_admin_user():
+    """Crée l'utilisateur administrateur initial"""
+    try:
+        app = create_app()
+        with app.app_context():
+            # Récupération des variables d'environnement
+            admin_username = os.environ.get('ADMIN_USERNAME', 'admin').strip()
+            admin_phone = os.environ.get('ADMIN_PHONE', '+2250506531522').strip()
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'Admin2025!').strip()
+            
+            # Validation
+            if not admin_username or not admin_password:
+                raise ValueError("ADMIN_USERNAME et ADMIN_PASSWORD sont obligatoires")
+            
+            # Vérifier si l'admin existe déjà
+            existing = User.query.filter_by(username=admin_username).first()
+            
+            if existing:
+                if not existing.is_admin:
+                    existing.is_admin = True
+                    db.session.commit()
+                    logger.info(f"Utilisateur '{admin_username}' promu administrateur")
+                else:
+                    logger.info(f"Administrateur '{admin_username}' existe déjà")
+            else:
+                # Créer le nouvel administrateur
+                admin = User(
+                    username=admin_username,
+                    phone=admin_phone,
+                    password=generate_password_hash(admin_password),
+                    is_admin=True
+                )
+                db.session.add(admin)
+                db.session.commit()
+                logger.info(f"Administrateur '{admin_username}' créé avec succès")
+            
+            return True
+            
+    except Exception as e:
+        logger.error(f"Erreur lors de la création de l'administrateur: {e}")
+        return False
+
+
+def main():
+    """Fonction principale d'initialisation"""
+    logger.info("=== INITIALISATION DE LA BASE DE DONNÉES ===")
+    
+    # 1. Vérification de l'environnement
+    if not verify_environment():
+        logger.error("Échec de la vérification de l'environnement")
         sys.exit(1)
     
-    init_database()
+    # 2. Test de connexion
+    if not test_database_connection():
+        logger.error("Échec de la connexion à la base de données")
+        sys.exit(1)
+    
+    # 3. Création des tables
+    if not create_tables():
+        logger.error("Échec de la création des tables")
+        sys.exit(1)
+    
+    # 4. Création de l'administrateur
+    if not create_admin_user():
+        logger.error("Échec de la création de l'administrateur")
+        sys.exit(1)
+    
+    logger.info("=== INITIALISATION TERMINÉE AVEC SUCCÈS ===")
+
+
+if __name__ == '__main__':
+    main()

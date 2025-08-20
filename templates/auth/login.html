@@ -1,46 +1,29 @@
-<!-- templates/auth/login.html -->
 {% extends "base.html" %}
 
 {% block title %}Connexion - ImmoFacile{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-lg border-0">
-            <div class="card-header bg-primary text-white text-center py-4">
-                <h3 class="mb-0">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Connexion
-                </h3>
-                <p class="mb-0 opacity-75">Accédez à votre compte</p>
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Connexion
+                </h4>
             </div>
-            
             <div class="card-body p-4">
-                <!-- Messages flash spécifiques aux erreurs -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            {% if category == 'error' %}
-                                <div class="alert alert-danger alert-sm py-2 mb-3 text-center">
-                                    {{ message }}
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
-                <form method="POST">
+                <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
                     
                     <!-- Nom d'utilisateur -->
                     <div class="mb-3">
                         {{ form.username.label(class="form-label fw-bold") }}
-                        {% set username_class = 'form-control' %}
-                        {% if form.username.errors %}{% set username_class = username_class + ' is-invalid' %}{% endif %}
-                        {{ form.username(class=username_class, autocomplete="username") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
                         {% if form.username.errors %}
-                            <div class="invalid-feedback d-block">
+                            <div class="invalid-feedback">
                                 {% for error in form.username.errors %}
-                                    <small>{{ error }}</small><br>
+                                    {{ error }}
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -49,38 +32,35 @@
                     <!-- Mot de passe -->
                     <div class="mb-3">
                         {{ form.password.label(class="form-label fw-bold") }}
-                        {% set password_class = 'form-control' %}
-                        {% if form.password.errors %}{% set password_class = password_class + ' is-invalid' %}{% endif %}
-                        {{ form.password(class=password_class, autocomplete="current-password") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
                         {% if form.password.errors %}
-                            <div class="invalid-feedback d-block">
+                            <div class="invalid-feedback">
                                 {% for error in form.password.errors %}
-                                    <small>{{ error }}</small><br>
+                                    {{ error }}
                                 {% endfor %}
                             </div>
                         {% endif %}
                     </div>
 
-                    <!-- Se souvenir de moi -->
-                    <div class="mb-4">
+                    <!-- Se souvenir -->
+                    <div class="mb-3">
                         <div class="form-check">
                             {{ form.remember(class="form-check-input") }}
                             {{ form.remember.label(class="form-check-label") }}
                         </div>
                     </div>
 
-                    <!-- Bouton de connexion -->
+                    <!-- Bouton de soumission -->
                     <div class="d-grid">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
                     </div>
                 </form>
             </div>
-            
             <div class="card-footer text-center bg-light">
                 <p class="mb-0">
-                    Pas encore inscrit ? 
-                    <a href="{{ url_for('auth.register') }}" class="text-decoration-none fw-bold">
-                        Créer un compte
+                    Pas encore de compte ? 
+                    <a href="{{ url_for('auth.register') }}" class="text-decoration-none">
+                        Inscrivez-vous ici
                     </a>
                 </p>
             </div>
